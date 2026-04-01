@@ -1,0 +1,19 @@
+<?xml version='1.0'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot_model">
+
+	<xacro:include filename="car_constants.xacro"/>
+	<xacro:include filename="inertial_macros.xacro"/>
+	<xacro:include filename="robot_chasis.xacro"/>
+	<xacro:include filename="torso.xacro"/>
+	<xacro:include filename="gazebo.xacro"/>
+	<xacro:include filename="arms.xacro"/>
+	<xacro:include filename="sensors.xacro"/>
+	<xacro:robot_chassis/>
+	<xacro:torso parent="chassis-link"/>
+	<xacro:left_arm parent="torso_link"/>
+	<xacro:right_arm parent="torso_link"/>
+	<xacro:robot_sensors parent="torso_link"/>
+
+	<xacro:gazebo_extensions/>
+
+</robot>

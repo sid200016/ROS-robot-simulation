@@ -1,0 +1,65 @@
+<?xml version='1.0'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+	<xacro:macro name="torso" params="parent">
+		<link name="torso_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<box size="${torso_length} ${torso_width} ${torso_height}" />
+				</geometry>
+				<material name="silver">
+					<color rgba="0.75 0.75 0.78 1.0"/>
+				</material>
+			</visual>
+			<collision>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<box size="${torso_length} ${torso_width} ${torso_height}" />
+				</geometry>
+			</collision>
+			<xacro:box_inertial_from_mass
+				l="${torso_length}"
+				w="${torso_width}"
+				h="${torso_height}"
+				mass="${torso_mass}" />
+		</link>
+
+		<joint name="torso_joint" type="fixed">
+			<parent link="${parent}"/>
+			<child link="torso_link"/>
+			<origin xyz="0 0 ${torso_z_offset}" rpy="0 0 0" />
+		</joint>
+
+		<link name="face_panel_link">
+			<visual>
+				<origin xyz="${torso_length / 2.0 + face_panel_length / 2.0} 0 ${torso_height / 4.0}" rpy="0 0 0" />
+				<geometry>
+					<box size="${face_panel_length} ${face_panel_width} ${face_panel_height}" />
+				</geometry>
+				<material name="face_black">
+					<color rgba="0.05 0.05 0.08 1.0"/>
+				</material>
+			</visual>
+			<collision>
+				<origin xyz="${torso_length / 2.0 + face_panel_length / 2.0} 0 ${torso_height / 4.0}" rpy="0 0 0" />
+				<geometry>
+					<box size="${face_panel_length} ${face_panel_width} ${face_panel_height}" />
+				</geometry>
+			</collision>
+			<xacro:box_inertial_from_mass
+				l="${face_panel_length}"
+				w="${face_panel_width}"
+				h="${face_panel_height}"
+				mass="${face_panel_mass}"
+				origin_xyz="${torso_length / 2.0 + face_panel_length / 2.0} 0 ${torso_height / 4.0}" />
+		</link>
+
+		<joint name="face_panel_joint" type="fixed">
+			<parent link="torso_link"/>
+			<child link="face_panel_link"/>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+		</joint>
+	</xacro:macro>
+
+</robot>

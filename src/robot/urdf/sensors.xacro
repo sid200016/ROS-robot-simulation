@@ -1,0 +1,63 @@
+<?xml version='1.0'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot_sensors">
+
+	<xacro:macro name="robot_sensors" params="parent">
+		<link name="camera_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<box size="0.05 0.04 0.04" />
+				</geometry>
+				<material name="camera_black">
+					<color rgba="0.1 0.1 0.1 1.0"/>
+				</material>
+			</visual>
+			<collision>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<box size="0.05 0.04 0.04" />
+				</geometry>
+			</collision>
+			<xacro:box_inertial_from_mass
+				l="0.05"
+				w="0.04"
+				h="0.04"
+				mass="0.15" />
+		</link>
+
+		<joint name="camera_joint" type="fixed">
+			<parent link="${parent}"/>
+			<child link="camera_link"/>
+			<origin xyz="${torso_length / 2.0 + 0.03} 0 0.03" rpy="0 0 0" />
+		</joint>
+
+		<link name="lidar_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<cylinder radius="0.04" length="0.04" />
+				</geometry>
+				<material name="lidar_dark">
+					<color rgba="0.2 0.2 0.22 1.0"/>
+				</material>
+			</visual>
+			<collision>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<cylinder radius="0.04" length="0.04" />
+				</geometry>
+			</collision>
+			<xacro:cylinder_inertial_from_mass
+				radius="0.04"
+				length="0.04"
+				mass="0.2" />
+		</link>
+
+		<joint name="lidar_joint" type="fixed">
+			<parent link="${parent}"/>
+			<child link="lidar_link"/>
+			<origin xyz="0 0 ${torso_height / 2.0 + 0.04}" rpy="0 0 0" />
+		</joint>
+	</xacro:macro>
+
+</robot>

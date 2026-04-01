@@ -1,0 +1,74 @@
+<?xml version='1.0'?>
+<robot xmlns:xacro ="http://www.ros.org/wiki/xacro" name="robot_chasis">	
+	<xacro:macro name="drive_wheel" params="name x y">
+		<link name="${name}_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="1.5708 0 0" />
+				<geometry>
+					<cylinder radius="${wheel_radius}" length="${wheel_width}" />
+				</geometry>
+				<material name="dark_grey">
+					<color rgba="0.15 0.15 0.15 1.0"/>
+				</material>
+			</visual>
+			<collision>
+				<origin xyz="0 0 0" rpy="1.5708 0 0" />
+				<geometry>
+					<cylinder radius="${wheel_radius}" length="${wheel_width}" />
+				</geometry>
+			</collision>
+			<xacro:cylinder_inertial_from_mass
+				radius="${wheel_radius}"
+				length="${wheel_width}"
+				mass="${wheel_mass}"
+				origin_xyz="0 0 0"
+				origin_rpy="1.5708 0 0" />
+		</link>
+
+		<joint name="${name}_joint" type="continuous">
+			<parent link="chassis-link"/>
+			<child link="${name}_link"/>
+			<origin xyz="${x} ${y} ${-chassis_height / 2.0}" rpy="0 0 0" />
+			<axis xyz="0 1 0"/>
+			<dynamics damping="0.2" friction="0.1"/>
+		</joint>
+	</xacro:macro>
+
+	<xacro:macro name="robot_chassis" params="">
+		<link name="base_link"/>
+
+		<link name="chassis-link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<box size="${chassis_length} ${chassis_width} ${chassis_height}" />
+				</geometry>
+				<material name="brown">
+					<color rgba="0.3 0 0.4 1"/>
+				</material>		
+			</visual>
+			<collision>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<box size="${chassis_length} ${chassis_width} ${chassis_height}" />
+				</geometry>
+			</collision>
+			<xacro:box_inertial_from_mass
+				l="${chassis_length}"
+				w="${chassis_width}"
+				h="${chassis_height}"
+				mass="${chassis_mass}" />
+		</link>
+		
+		<joint name="joint-base-chassis" type="fixed">
+			<parent link="base_link"/>
+			<child link="chassis-link"/>
+			<origin xyz="0 0 ${wheel_radius}" rpy="0 0 0" />
+		</joint>
+
+		<xacro:drive_wheel name="front_left_wheel"  x="${ wheel_x_offset}" y="${ wheel_y_offset}"/>
+		<xacro:drive_wheel name="front_right_wheel" x="${ wheel_x_offset}" y="${-wheel_y_offset}"/>
+		<xacro:drive_wheel name="rear_left_wheel"   x="${-wheel_x_offset}" y="${ wheel_y_offset}"/>
+		<xacro:drive_wheel name="rear_right_wheel"  x="${-wheel_x_offset}" y="${-wheel_y_offset}"/>
+	</xacro:macro>
+</robot>
