@@ -33,26 +33,26 @@
 
 		<link name="face_panel_link">
 			<visual>
-				<origin xyz="${torso_length / 2.0 + face_panel_length / 2.0} 0 ${torso_height / 4.0}" rpy="0 0 0" />
+				<origin xyz="${torso_length / 2.0 - face_panel_height / 2.0} 0 ${torso_height / 2.0 + face_panel_length / 2.0}" rpy="0 0 0" />
 				<geometry>
-					<box size="${face_panel_length} ${face_panel_width} ${face_panel_height}" />
+					<box size="${face_panel_height} ${face_panel_width} ${face_panel_length}" />
 				</geometry>
 				<material name="face_black">
 					<color rgba="0.05 0.05 0.08 1.0"/>
 				</material>
 			</visual>
 			<collision>
-				<origin xyz="${torso_length / 2.0 + face_panel_length / 2.0} 0 ${torso_height / 4.0}" rpy="0 0 0" />
+				<origin xyz="${torso_length / 2.0 - face_panel_height / 2.0} 0 ${torso_height / 2.0 + face_panel_length / 2.0}" rpy="0 0 0" />
 				<geometry>
-					<box size="${face_panel_length} ${face_panel_width} ${face_panel_height}" />
+					<box size="${face_panel_height} ${face_panel_width} ${face_panel_length}" />
 				</geometry>
 			</collision>
 			<xacro:box_inertial_from_mass
-				l="${face_panel_length}"
+				l="${face_panel_height}"
 				w="${face_panel_width}"
-				h="${face_panel_height}"
+				h="${face_panel_length}"
 				mass="${face_panel_mass}"
-				origin_xyz="${torso_length / 2.0 + face_panel_length / 2.0} 0 ${torso_height / 4.0}" />
+				origin_xyz="${torso_length / 2.0 - face_panel_height / 2.0} 0 ${torso_height / 2.0 + face_panel_length / 2.0}" />
 		</link>
 
 		<joint name="face_panel_joint" type="fixed">

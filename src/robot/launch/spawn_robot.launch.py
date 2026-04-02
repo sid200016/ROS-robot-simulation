@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory # pyright: ignore[reportMissingImports]
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
-from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction # pyright: ignore[reportMissingImports]
+from launch.substitutions import LaunchConfiguration # pyright: ignore[reportMissingImports]
 
 
 def generate_launch_description():
