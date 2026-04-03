@@ -82,7 +82,12 @@
 				</ray>
 			</sensor>
 		</gazebo>
-
+		<gazebo>
+			<plugin filename="libgz_ros2_control-system.so"
+          		name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+				<parameters>$(find ros_sim_robot)/config/diff_drive_controller.yaml</parameters>
+			</plugin>
+		</gazebo>
 		<xacro:gazebo_wheel_surface link_name="front_left_wheel_link"/>
 		<xacro:gazebo_wheel_surface link_name="front_right_wheel_link"/>
 		<xacro:gazebo_wheel_surface link_name="rear_left_wheel_link"/>

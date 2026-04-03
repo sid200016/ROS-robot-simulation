@@ -540,6 +540,31 @@
     <child link="lidar_link"/>
     <origin rpy="0 0 0" xyz="0 0 0.14"/>
   </joint>
+  <ros2_control name="GazeboSimSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <joint name="front_left_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="front_right_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_left_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_right_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
   <gazebo reference="chassis-link">
     <material>Gazebo/Blue</material>
     <selfCollide>false</selfCollide>
@@ -602,6 +627,11 @@
         </range>
       </ray>
     </sensor>
+  </gazebo>
+  <gazebo>
+    <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>/home/sid/Desktop/ROS_SIM/install/ros_sim_robot/share/ros_sim_robot/config/diff_drive_controller.yaml</parameters>
+    </plugin>
   </gazebo>
   <gazebo reference="front_left_wheel_link">
     <material>Gazebo/DarkGrey</material>
