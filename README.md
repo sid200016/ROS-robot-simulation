@@ -23,3 +23,5 @@ colcon build
 source install/setup.bash
 ros2 launch ros_sim_robot spawn_robot.launch.py
 
+ros2 topic list
+ gz topic -l 

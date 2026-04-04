@@ -4,7 +4,7 @@ project(ros_sim_robot)
 find_package(ament_cmake REQUIRED)
 
 install(
-  DIRECTORY launch urdf config
+  DIRECTORY launch urdf config worlds
   DESTINATION share/${PROJECT_NAME}
 )
 

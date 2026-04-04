@@ -12,6 +12,8 @@ from launch_ros.parameter_descriptions import ParameterValue # pyright: ignore[r
 def generate_launch_description():
     package_share = Path(get_package_share_directory("ros_sim_robot"))
     default_urdf = package_share / "urdf" / "robot_fin.urdf"
+    default_world = package_share / "worlds" / "sensor_empty.sdf"
+    world_name = "sensor_empty"
 
     urdf_path = LaunchConfiguration("urdf_path")
     entity_name = LaunchConfiguration("entity_name")
@@ -25,7 +27,7 @@ def generate_launch_description():
             "launch",
             "ros_gz_sim",
             "gz_sim.launch.py",
-            "gz_args:=-r empty.sdf",
+            f"gz_args:=-r {default_world}",
         ],
         output="screen",
     )
@@ -39,7 +41,7 @@ def generate_launch_description():
                     "launch",
                     "ros_gz_sim",
                     "gz_spawn_model.launch.py",
-                    "world:=empty",
+                    f"world:={world_name}",
                     ["file:=", urdf_path],
                     ["entity_name:=", entity_name],
                     ["x:=", x],
@@ -51,10 +53,13 @@ def generate_launch_description():
         ],
     )
 
-    clock_bridge = Node(
+    clock_and_sensor_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
-        arguments=["/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"],
+        arguments=["/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+        "/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image",
+        "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+        "/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",],
         output="screen",
     )
 
@@ -116,8 +121,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("x", default_value="0.0"),
             DeclareLaunchArgument("y", default_value="0.0"),
-            DeclareLaunchArgument("z", default_value="0.1"),
-            clock_bridge,
+            DeclareLaunchArgument("z", default_value="0.15"),
+            clock_and_sensor_bridge,
             robot_state_publisher,
             gazebo,
             spawn,
