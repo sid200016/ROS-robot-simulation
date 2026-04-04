@@ -5,7 +5,10 @@ controller_manager:
       type: joint_state_broadcaster/JointStateBroadcaster
     diff_drive_controller:
       type: diff_drive_controller/DiffDriveController
-
+    left_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    right_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
 diff_drive_controller:
   ros__parameters:
     left_wheel_names: ["front_left_wheel_joint", "rear_left_wheel_joint"]
@@ -18,3 +21,28 @@ diff_drive_controller:
     publish_rate: 50.0
     position_feedback: true
     open_loop: false
+
+left_arm_controller:
+  ros__parameters:
+    joints: [left_arm_shoulder_joint, left_arm_elbow_joint, left_arm_wrist_joint]
+    command_interfaces: [position,effort]
+    state_interfaces: [position, velocity]
+    allow_partial_joints_goal: false
+    action_monitor_rate: 20.0
+    interpolate_from_desired_state: true
+    constraints:
+      stopped_velocity_tolerance: 0.01
+      goal_time: 0.5
+      
+
+right_arm_controller:
+  ros__parameters:
+    joints: [right_arm_shoulder_joint, right_arm_elbow_joint, right_arm_wrist_joint]
+    command_interfaces: [position,effort]
+    state_interfaces: [position, velocity]
+    allow_partial_joints_goal: false
+    action_monitor_rate: 20.0
+    interpolate_from_desired_state: true
+    constraints:
+      stopped_velocity_tolerance: 0.01
+      goal_time: 0.5

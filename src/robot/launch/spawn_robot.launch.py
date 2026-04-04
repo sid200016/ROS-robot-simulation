@@ -100,10 +100,28 @@ def generate_launch_description():
         output="screen",
     )
 
+    joint_trajectory_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "left_arm_controller",
+            "right_arm_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+        output="screen",
+    )
+
     start_diff_drive_controller = RegisterEventHandler(
         OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
             on_exit=[diff_drive_controller_spawner],
+        )
+    )
+    start_joint_trajectory_controller = RegisterEventHandler(
+        OnProcessExit(
+            target_action=diff_drive_controller_spawner,
+            on_exit=[joint_trajectory_controller_spawner],
         )
     )
 
@@ -120,7 +138,7 @@ def generate_launch_description():
                 description="Entity name inside Gazebo.",
             ),
             DeclareLaunchArgument("x", default_value="0.0"),
-            DeclareLaunchArgument("y", default_value="0.0"),
+            DeclareLaunchArgument("y", default_value="2.0"),
             DeclareLaunchArgument("z", default_value="0.15"),
             clock_and_sensor_bridge,
             robot_state_publisher,
@@ -128,5 +146,6 @@ def generate_launch_description():
             spawn,
             joint_state_broadcaster_spawner,
             start_diff_drive_controller,
+            start_joint_trajectory_controller,
         ]
     )
