@@ -112,6 +112,27 @@ def generate_launch_description():
         output="screen",
     )
 
+    left_arm_init_pose = ExecuteProcess(
+    cmd=[
+        "ros2", "topic", "pub", "--once",
+        "/left_arm_controller/joint_trajectory",
+        "trajectory_msgs/msg/JointTrajectory",
+        "{joint_names: ['left_arm_shoulder_joint', 'left_arm_elbow_joint', 'left_arm_wrist_joint'], "
+        "points: [{positions: [-0.6, -0.7, -0.5], time_from_start: {sec: 2}}]}"
+    ],
+    output="screen",)
+
+    right_arm_init_pose = ExecuteProcess(
+    cmd=[
+        "ros2", "topic", "pub", "--once",
+        "/right_arm_controller/joint_trajectory",
+        "trajectory_msgs/msg/JointTrajectory",
+        "{joint_names: ['right_arm_shoulder_joint', 'right_arm_elbow_joint', 'right_arm_wrist_joint'], "
+        "points: [{positions: [0.6, 0.7, 0.5], time_from_start: {sec: 2}}]}"
+    ],
+    output="screen",)
+
+
     start_diff_drive_controller = RegisterEventHandler(
         OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
@@ -122,6 +143,13 @@ def generate_launch_description():
         OnProcessExit(
             target_action=diff_drive_controller_spawner,
             on_exit=[joint_trajectory_controller_spawner],
+        )
+    )
+
+    move_to_init_pose = RegisterEventHandler(
+        OnProcessExit(
+            target_action=joint_trajectory_controller_spawner,
+            on_exit=[left_arm_init_pose, right_arm_init_pose],
         )
     )
 
@@ -137,9 +165,9 @@ def generate_launch_description():
                 default_value="robot",
                 description="Entity name inside Gazebo.",
             ),
-            DeclareLaunchArgument("x", default_value="0.0"),
-            DeclareLaunchArgument("y", default_value="2.0"),
-            DeclareLaunchArgument("z", default_value="0.15"),
+            DeclareLaunchArgument("x", default_value="-3.0"),
+            DeclareLaunchArgument("y", default_value="6.0"),
+            DeclareLaunchArgument("z", default_value="0.2"),
             clock_and_sensor_bridge,
             robot_state_publisher,
             gazebo,
@@ -147,5 +175,6 @@ def generate_launch_description():
             joint_state_broadcaster_spawner,
             start_diff_drive_controller,
             start_joint_trajectory_controller,
+            move_to_init_pose,
         ]
     )
