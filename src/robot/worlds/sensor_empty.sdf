@@ -29,7 +29,35 @@
         <pose>3 -7.4 0.0 0 0 0</pose>
     </include>
 
- 
+    <include>
+        <name>obs1</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>0.5 0.0 0.0 0 0 1.57</pose>  
+    </include>
+    <include>
+        <name>obs2</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>3.0 2.5 0.0 0 0 1.57</pose>  
+    </include>
+   
+   <include>
+        <name>obs3</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>3.0 -2.5 0.0 0 0 1.57</pose>  
+    </include>
+   
+   <include>
+        <name>obs4</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>-3.0 1.5 0.0 0 0 1.57</pose>  
+    </include>
+   
+   <include>
+        <name>obs5</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>-3.0 -1.5 0.0 0 0 1.57</pose>  
+    </include>
+   
    
     <include>
         <name>chair1</name>
@@ -37,7 +65,7 @@
         <pose>3 0.8 0.0 0 0 0</pose>
     </include>
  
-  
+    
     <include>
         <name>chair2</name>
         <uri>model://OfficeChairBlack</uri>
