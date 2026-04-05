@@ -25,3 +25,6 @@ ros2 launch ros_sim_robot spawn_robot.launch.py
 
 ros2 topic list
  gz topic -l 
+
+ros2 run image_tools showimage --ros-args -r image:=/camera/image_raw
+
