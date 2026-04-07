@@ -141,17 +141,23 @@ class WaypointNode(Node):
         self.right_side_min = float("inf")
         self.back_min = float("inf")
         self.self_side_ignore = 0.36
-        self.front_stop = 0.9
-        self.front_corner_stop = 0.9
-        self.corner_caution = 0.9
+        self.front_stop = 1.1
+        self.front_corner_stop = 0.85
+        self.corner_caution = 0.65
         self.side_drive_stop = 0.50
-        self.side_turn_stop = 0.55
+        self.side_turn_stop = 0.50
         self.back_stop = 0.55
 
         self.distance_traveled = 0.0
         self.prev_xy = None
         self.rooms_visited = set()
         self.current_room = "center"
+        self.explore_progress_anchor = None
+        self.explore_progress_anchor_ns = 0
+        self.explore_stuck_timeout = 20
+        self.explore_stuck_distance = 0.05
+        self.escape_route_odom = []
+        self.escape_route_index = 0
 
         self.position_tolerance = 0.04
         self.yaw_tolerance = 0.05
@@ -396,9 +402,9 @@ class WaypointNode(Node):
     def control_loop(self):
         self.pump_set_pose_transport()
 
-        if self.odom_msg is None or self.odom_start is None or self.scan_msg is None:
-            self.stop_robot()
-            return
+        # if self.odom_msg is None or self.odom_start is None or self.scan_msg is None:
+        #     self.stop_robot()
+        #     return
 
         if self.cube_attached:
             self.update_attached_cube_pose()
@@ -499,6 +505,19 @@ class WaypointNode(Node):
                 self.transition_to("DONE")
             
         if self.mission_state == "EXPLORE":
+            if self.explore_is_stuck():
+                reason = "escape stalled" if self.mode == "ESCAPE" else "explore stalled"
+                self.start_explore_escape(reason)
+
+            if self.mode == "ESCAPE":
+                if self.execute_explore_escape():
+                    self.mode = "FORWARD"
+                    self.escape_route_odom = []
+                    self.escape_route_index = 0
+                    self.reset_explore_progress()
+                    self.get_logger().info("Explore escape complete; resuming free explore")
+                return
+
             blocked_ahead = (
             self.front_min < self.front_stop or
             self.front_left_min < self.front_corner_stop or
@@ -549,7 +568,14 @@ class WaypointNode(Node):
                 else:
                     self.publish_cmd(-0.15, 0.0)
         if self.mission_state == "DONE":
+            self.stop_robot()
+            self.mode = "FORWARD"
+            self.turn_dir = 1.0
+            self.escape_route_odom = []
+            self.escape_route_index = 0
+            self.reset_explore_progress()
             self.transition_to("EXPLORE")
+            return
 
     def follow_active_route(self):
         if self.route_index >= len(self.active_route):
@@ -634,6 +660,112 @@ class WaypointNode(Node):
         angular = self.clamp(1.6 * yaw_error, -0.80, 0.80)
         self.publish_cmd(-reverse_speed, angular)
         return False
+
+    def reset_explore_progress(self):
+        if self.odom_msg is None:
+            self.explore_progress_anchor = None
+            self.explore_progress_anchor_ns = 0
+            return
+
+        self.explore_progress_anchor = (
+            self.odom_msg.pose.pose.position.x,
+            self.odom_msg.pose.pose.position.y,
+        )
+        self.explore_progress_anchor_ns = self.get_clock().now().nanoseconds
+
+    def explore_is_stuck(self):
+        if self.odom_msg is None:
+            return False
+
+        now_ns = self.get_clock().now().nanoseconds
+        x = self.odom_msg.pose.pose.position.x
+        y = self.odom_msg.pose.pose.position.y
+
+        if self.explore_progress_anchor is None:
+            self.explore_progress_anchor = (x, y)
+            self.explore_progress_anchor_ns = now_ns
+            return False
+
+        progress = math.hypot(
+            x - self.explore_progress_anchor[0],
+            y - self.explore_progress_anchor[1],
+        )
+        if progress >= self.explore_stuck_distance:
+            self.explore_progress_anchor = (x, y)
+            self.explore_progress_anchor_ns = now_ns
+            return False
+
+        stalled_for = (now_ns - self.explore_progress_anchor_ns) / 1e9
+        return stalled_for >= self.explore_stuck_timeout
+
+    def start_explore_escape(self, reason):
+        ox = self.odom_msg.pose.pose.position.x
+        oy = self.odom_msg.pose.pose.position.y
+        oyaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
+        wx, wy, _ = self.odom_pose_to_world(ox, oy, oyaw)
+
+        route_world = self.build_explore_escape_route_world(wx, wy)
+        self.escape_route_odom = [
+            self.world_pose_to_odom(px, py, pyaw)
+            for px, py, pyaw in route_world
+        ]
+        self.escape_route_index = 0
+        self.mode = "ESCAPE"
+        self.reset_explore_progress()
+
+        goal_x, goal_y, _ = route_world[-1]
+        self.get_logger().warn(
+            f"Explore escape triggered: {reason} at ({wx:.2f}, {wy:.2f}) "
+            f"toward ({goal_x:.2f}, {goal_y:.2f})"
+        )
+
+    def build_explore_escape_route_world(self, wx, wy):
+        if wx < -1.2 and wy < -0.8:
+            stage_y = -5.6 if wy < -3.0 else -2.2
+            return [
+                (-0.8, stage_y, 0.0),
+                (-0.8, -0.8, math.pi / 2.0),
+            ]
+
+        if wx < -1.2 and wy > 0.8:
+            stage_y = 5.6 if wy > 3.0 else 2.2
+            return [
+                (-0.8, stage_y, 0.0),
+                (-0.8, 0.8, -math.pi / 2.0),
+            ]
+
+        if wx > 1.2 and wy < -0.8:
+            stage_y = -5.6 if wy < -3.0 else -2.2
+            return [
+                (0.8, stage_y, math.pi),
+                (0.8, -0.8, math.pi / 2.0),
+            ]
+
+        if wx > 1.2 and wy > 0.8:
+            stage_y = 5.6 if wy > 3.0 else 2.2
+            return [
+                (0.8, stage_y, math.pi),
+                (0.8, 0.8, -math.pi / 2.0),
+            ]
+
+        return [
+            (0.0, 0.0, 0.0),
+        ]
+
+    def execute_explore_escape(self):
+        if self.escape_route_index >= len(self.escape_route_odom):
+            self.stop_robot()
+            return True
+
+        gx, gy, gyaw = self.escape_route_odom[self.escape_route_index]
+        if self.navigate_to_pose(gx, gy, gyaw):
+            self.get_logger().info(
+                f"Explore escape waypoint {self.escape_route_index} reached"
+            )
+            self.escape_route_index += 1
+            self.reset_explore_progress()
+
+        return self.escape_route_index >= len(self.escape_route_odom)
 
     def publish_right_arm_pose(self, positions, use_action=False):
         self.right_arm_target = list(positions)
@@ -804,6 +936,7 @@ class WaypointNode(Node):
             f"state={self.mission_state} cube={self.target_cube} "
             f"mode={self.mode} room={self.current_room} rooms={sorted(self.rooms_visited)} "
             f"route={self.route_index}/{len(self.active_route)} "
+            f"escape={self.escape_route_index}/{len(self.escape_route_odom)} "
             f"cube_attached={self.cube_attached} dist={self.distance_traveled:.2f} "
             f"front={self.front_min:.2f} back={self.back_min:.2f} "
             f"left={self.left_side_min:.2f} right={self.right_side_min:.2f} "
