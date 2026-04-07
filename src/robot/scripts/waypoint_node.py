@@ -141,7 +141,7 @@ class WaypointNode(Node):
         self.right_side_min = float("inf")
         self.back_min = float("inf")
         self.self_side_ignore = 0.36
-        self.front_stop = 1.1
+        self.front_stop = 1.15
         self.front_corner_stop = 0.85
         self.corner_caution = 0.65
         self.side_drive_stop = 0.50
