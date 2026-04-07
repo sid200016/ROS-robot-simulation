@@ -7,6 +7,7 @@ from launch.event_handlers import OnProcessExit # pyright: ignore[reportMissingI
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration # pyright: ignore[reportMissingImports]
 from launch_ros.actions import Node # pyright: ignore[reportMissingImports]
 from launch_ros.parameter_descriptions import ParameterValue # pyright: ignore[reportMissingImports]
+from ros_gz_bridge.actions import RosGzBridge # pyright: ignore[reportMissingImports]
 
 
 def generate_launch_description():
@@ -61,6 +62,28 @@ def generate_launch_description():
         "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
         "/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",],
         output="screen",
+    )
+
+    set_pose_bridge = RosGzBridge(
+        bridge_name="set_pose_bridge",
+        config_file="",
+        container_name="ros_gz_container",
+        create_own_container=False,
+        namespace="",
+        use_composition=False,
+        use_respawn=False,
+        log_level="warn",
+        extra_bridge_params={
+            "bridges": {
+                "bridge_0": {
+                    "service_name": f"/world/{world_name}/set_pose",
+                    "ros_type_name": "ros_gz_interfaces/srv/SetEntityPose",
+                    "gz_req_type_name": "gz.msgs.Pose",
+                    "gz_rep_type_name": "gz.msgs.Boolean",
+                },
+            },
+            "bridge_names": ["bridge_0"],
+        },
     )
 
     robot_state_publisher = Node(
@@ -132,6 +155,12 @@ def generate_launch_description():
     ],
     output="screen",)
 
+    waypoint_robot = Node(
+        package="ros_sim_robot",
+        executable="waypoint_node.py",
+        parameters=[{"use_sim_time": True}],
+        output="screen",
+    )
 
     start_diff_drive_controller = RegisterEventHandler(
         OnProcessExit(
@@ -153,6 +182,14 @@ def generate_launch_description():
         )
     )
 
+    start_waypoint_robot = RegisterEventHandler(
+        OnProcessExit(
+            target_action=joint_trajectory_controller_spawner,
+            on_exit=[TimerAction(period=3.0, actions=[waypoint_robot])],
+        )
+    )
+    
+
     return LaunchDescription(
         [
             DeclareLaunchArgument(
@@ -169,6 +206,7 @@ def generate_launch_description():
             DeclareLaunchArgument("y", default_value="6.0"),
             DeclareLaunchArgument("z", default_value="0.2"),
             clock_and_sensor_bridge,
+            set_pose_bridge,
             robot_state_publisher,
             gazebo,
             spawn,
@@ -176,5 +214,6 @@ def generate_launch_description():
             start_diff_drive_controller,
             start_joint_trajectory_controller,
             move_to_init_pose,
+            start_waypoint_robot
         ]
     )

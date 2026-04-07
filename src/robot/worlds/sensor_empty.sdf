@@ -29,11 +29,7 @@
         <pose>3 -7.4 0.0 0 0 0</pose>
     </include>
 
-    <include>
-        <name>obs1</name>
-        <uri>model://Woodcube10cm</uri>
-        <pose>0.5 0.0 0.0 0 0 1.57</pose>  
-    </include>
+ 
     <include>
         <name>obs2</name>
         <uri>model://Woodcube10cm</uri>
@@ -56,6 +52,36 @@
         <name>obs5</name>
         <uri>model://Woodcube10cm</uri>
         <pose>-3.0 -1.5 0.0 0 0 1.57</pose>  
+    </include>
+    <include>
+        <name>obs6</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>3.0 6.0 0.0 0 0 1.57</pose>  
+    </include>
+    <include>
+        <name>obs7</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>3.0 2.0 0.0 0 0 1.57</pose>  
+    </include>
+    <include>
+        <name>obs8</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>3.5 2.0 0.0 0 0 1.57</pose>  
+    </include>
+    <include>
+        <name>obs9</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>3.5 2.25 0.0 0 0 1.57</pose>  
+    </include>
+   <include>
+        <name>obs10</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>-3.5 -2.0 0.0 0 0 1.57</pose>  
+    </include>
+    <include>
+        <name>obs11</name>
+        <uri>model://Woodcube10cm</uri>
+        <pose>-3.5 -2.25 0.0 0 0 1.57</pose>  
     </include>
    
    
@@ -99,39 +125,39 @@
 
     <include>
         <name>bed1</name>
-        <uri>model://Bed</uri>
-        <pose>2.5 4 0.0 0 0 -1.57</pose>
+        <uri>model://NormalBed</uri>
+        <pose>2.5 4 0.0 0 0 0</pose>
     </include>
     <include>
         <name>bed2</name>
-        <uri>model://Bed</uri>
-        <pose>-2.5 3.5 0.0 0 0 1.57</pose>
+        <uri>model://NormalBed</uri>
+        <pose>-2.5 3.5 0.0 0 0 0</pose>
     </include>
     <include>
         <name>bed3</name>
-        <uri>model://Bed</uri>
-        <pose>2.5 -4 0.0 0 0 -1.57</pose>
+        <uri>model://NormalBed</uri>
+        <pose>2.5 -4 0.0 0 0 0</pose>
     </include>
     <include>
         <name>bed4</name>
-        <uri>model://Bed</uri>
-        <pose>-2.5 -4.0 0.0 0 0 1.57</pose>
+        <uri>model://NormalBed</uri>
+        <pose>-2.5 -4.0 0.0 0 0 0</pose>
     </include>
-    <!-- Open collection box with 0.5 m outer edge length and no lid -->
+
     <model name="openbox_wall1">
         <static>true</static>
         <link name="link">
             <collision name="collision">
             <geometry>
                 <box>
-                <size>0.5 0.05 0.5</size>
+                <size>0.5 0.05 0.1</size>
                 </box>
             </geometry>
             </collision>
             <visual name="visual">
             <geometry>
                 <box>
-                <size>0.5 0.05 0.5</size>
+                <size>0.5 0.05 0.1</size>
                 </box>
             </geometry>
             <material>
@@ -140,7 +166,7 @@
             </material>
             </visual>
         </link>
-        <pose>-1.5 7.725 0.25 0 0 0</pose>
+        <pose>-1.5 7.725 0.05 0 0 0</pose>
     </model>
     <model name="openbox_wall2">
         <static>true</static>
@@ -148,14 +174,14 @@
             <collision name="collision">
             <geometry>
                 <box>
-                <size>0.5 0.05 0.5</size>
+                <size>0.5 0.05 0.1</size>
                 </box>
             </geometry>
             </collision>
             <visual name="visual">
             <geometry>
                 <box>
-                <size>0.5 0.05 0.5</size>
+                <size>0.5 0.05 0.1 </size>
                 </box>
             </geometry>
             <material>
@@ -164,7 +190,7 @@
             </material>
             </visual>
         </link>
-        <pose>-1.5 7.275 0.25 0 0 0</pose>
+        <pose>-1.5 7.275 0.05 0 0 0</pose>
     </model>
     <model name="openbox_wall3">
         <static>true</static>
@@ -172,14 +198,14 @@
             <collision name="collision">
             <geometry>
                 <box>
-                <size>0.05 0.5 0.5</size>
+                <size>0.05 0.5 0.1</size>
                 </box>
             </geometry>
             </collision>
             <visual name="visual">
             <geometry>
                 <box>
-                <size>0.05 0.5 0.5</size>
+                <size>0.05 0.5 0.1</size>
                 </box>
             </geometry>
             <material>
@@ -188,7 +214,7 @@
             </material>
             </visual>
         </link>
-        <pose>-1.725 7.5 0.25 0 0 0</pose>
+        <pose>-1.725 7.5 0.05 0 0 0</pose>
     </model>
     <model name="openbox_wall4">
         <static>true</static>
@@ -196,14 +222,14 @@
             <collision name="collision">
             <geometry>
                 <box>
-                <size>0.05 0.5 0.5</size>
+                <size>0.05 0.5 0.1</size>
                 </box>
             </geometry>
             </collision>
             <visual name="visual">
             <geometry>
                 <box>
-                <size>0.05 0.5 0.5</size>
+                <size>0.05 0.5 0.1</size>
                 </box>
             </geometry>
             <material>
@@ -212,7 +238,7 @@
             </material>
             </visual>
         </link>
-        <pose>-1.275 7.5 0.25 0 0 0</pose>
+        <pose>-1.275 7.5 0.05 0 0 0</pose>
     </model>
     <model name="openbox_bottom">
         <static>true</static>
