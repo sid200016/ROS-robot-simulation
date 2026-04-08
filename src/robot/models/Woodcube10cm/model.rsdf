@@ -6,7 +6,7 @@
   # Geometry
   dx = 0.10
   dy = 0.10
-  dz = 0.10
+  dz = 0.42
 
   # Inertia
   mass = 0.5167

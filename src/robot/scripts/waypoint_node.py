@@ -40,68 +40,6 @@ RIGHT_ARM_PICK = [0.5, -1.6, 1.1]
 RIGHT_ARM_CARRY = [-0.3, 0.9, -0.4]
 
 CUBE_MISSIONS = {
-    "obs2": {
-        "pick_route_world": [
-            (0.0, 6.0, 0.0),
-            (0.0, 2.5, -math.pi / 2.0),
-            (2.0, 2.5, 0.0),
-            (2.336, 2.5, math.pi / 2.0),
-        ],
-        "drop_route_world": [
-            (2.0, 2.05, math.pi),
-            (0.0, 2.05, math.pi),
-            (0.0, 5.55, math.pi / 2.0),
-            (-1.5, 5.55, math.pi),
-            (-1.5, 6.84, math.pi),
-        ],
-        "drop_pose_world": BOX_DROP_WORLD,
-    },
-    "obs3": {
-        "pick_route_world": [
-            (0.0, 6.0, 0.0),
-            (0.0, -2.5, -math.pi / 2.0),
-            (2.0, -2.5, 0.0),
-            (2.336, -2.5, math.pi / 2.0),
-        ],
-        "drop_route_world": [
-            (2.0, -2.95, math.pi),
-            (0.0, -2.95, math.pi),
-            (0.0, 5.55, math.pi / 2.0),
-            (-1.5, 5.55, math.pi),
-            (-1.5, 6.84, math.pi),
-        ],
-        "drop_pose_world": BOX_DROP_WORLD,
-    },
-    "obs4": {
-        "pick_route_world": [
-            (-1.0, 6.0, 0.0),
-            (-1.0, 1.5, -math.pi / 2.0),
-            (-2.0, 1.5, math.pi),
-            (-2.336, 1.5, -math.pi / 2.0),
-        ],
-        "drop_route_world": [
-            (-1.0, 1.05, 0.0),
-            (-1.0, 5.55, math.pi / 2.0),
-            (-1.5, 5.55, math.pi),
-            (-1.5, 6.84, math.pi),
-        ],
-        "drop_pose_world": BOX_DROP_WORLD,
-    },
-    "obs5": {
-        "pick_route_world": [
-            (-1.0, 6.0, 0.0),
-            (-1.0, -1.5, -math.pi / 2.0),
-            (-2.0, -1.5, math.pi),
-            (-2.336, -1.5, -math.pi / 2.0),
-        ],
-        "drop_route_world": [
-            (-1.0, -1.95, 0.0),
-            (-1.0, 5.55, math.pi / 2.0),
-            (-1.5, 5.55, math.pi),
-            (-1.5, 6.84, math.pi),
-        ],
-        "drop_pose_world": BOX_DROP_WORLD,
-    },
     "obs6": {
         "pick_route_world": [
             (0.0, 6.0, 0.0),
@@ -140,32 +78,24 @@ class WaypointNode(Node):
         self.left_side_min = float("inf")
         self.right_side_min = float("inf")
         self.back_min = float("inf")
-        self.self_side_ignore = 0.36
-        self.front_stop = 1.15
-        self.front_corner_stop = 0.85
-        self.corner_caution = 0.65
-        self.side_drive_stop = 0.50
-        self.side_turn_stop = 0.50
-        self.back_stop = 0.55
+
+        self.self_side_ignore = 0.38
+
 
         self.distance_traveled = 0.0
         self.prev_xy = None
         self.rooms_visited = set()
-        self.current_room = "center"
-        self.explore_progress_anchor = None
-        self.explore_progress_anchor_ns = 0
-        self.explore_stuck_timeout = 20
-        self.explore_stuck_distance = 0.05
-        self.escape_route_odom = []
-        self.escape_route_index = 0
+        self.current_room = "NORTH"
 
         self.position_tolerance = 0.04
         self.yaw_tolerance = 0.05
         self.turn_only_threshold = 0.22
         self.max_linear = 0.70
         self.max_angular = 1.40
-        self.nav_front_slow = 0.75
-        self.nav_front_stop = 0.50
+        self.nav_front_slow = 0.95
+        self.nav_front_stop = 0.62
+        self.nav_side_slow = 0.82
+        self.nav_side_stop = 0.64
 
         self.reverse_distance = 0.45
         self.reverse_linear_limit = 0.22
@@ -248,6 +178,65 @@ class WaypointNode(Node):
 
     def wrap_angle(self, angle):
         return math.atan2(math.sin(angle), math.cos(angle))
+
+    def choose_explore_turn_dir(self):
+        left_score = min(self.front_left_min, self.left_side_min)
+        right_score = min(self.front_right_min, self.right_side_min)
+        return 1.0 if left_score >= right_score else -1.0
+
+    def current_explore_wander_bias(self):
+        now_ns = self.get_clock().now().nanoseconds
+        if now_ns >= self.explore_wander_bias_ns:
+            self.explore_wander_bias = random.uniform(-0.08, 0.08)
+            self.explore_wander_bias_ns = now_ns + 2_000_000_000
+        return self.explore_wander_bias
+
+    def reset_explore_avoidance(self):
+        self.explore_avoid_dir = 0.0
+        self.explore_avoid_until_ns = 0
+
+    def current_explore_avoid_bias(self):
+        now_ns = self.get_clock().now().nanoseconds
+        trigger = self.explore_side_caution + 0.05
+        left_threat = min(self.front_left_min, self.left_side_min)
+        right_threat = min(self.front_right_min, self.right_side_min)
+
+        if right_threat < trigger and right_threat + 0.10 < left_threat:
+            self.explore_avoid_dir = 1.0
+            self.explore_avoid_until_ns = now_ns + int(
+                self.explore_avoid_hold_seconds * 1e9
+            )
+        elif left_threat < trigger and left_threat + 0.10 < right_threat:
+            self.explore_avoid_dir = -1.0
+            self.explore_avoid_until_ns = now_ns + int(
+                self.explore_avoid_hold_seconds * 1e9
+            )
+
+        if self.explore_avoid_dir > 0.0:
+            threat = right_threat
+            side_clear = self.right_side_min > (
+                self.explore_side_caution + self.explore_avoid_clear_margin
+            )
+            corner_clear = self.front_right_min > (
+                self.corner_caution + self.explore_avoid_clear_margin
+            )
+        elif self.explore_avoid_dir < 0.0:
+            threat = left_threat
+            side_clear = self.left_side_min > (
+                self.explore_side_caution + self.explore_avoid_clear_margin
+            )
+            corner_clear = self.front_left_min > (
+                self.corner_caution + self.explore_avoid_clear_margin
+            )
+        else:
+            return 0.0
+
+        if now_ns >= self.explore_avoid_until_ns and side_clear and corner_clear:
+            self.reset_explore_avoidance()
+            return 0.0
+
+        closeness = max(0.0, trigger - threat)
+        return self.explore_avoid_dir * (0.22 + self.explore_avoid_gain * closeness)
 
     def transition_to(self, new_state):
         self.mission_state = new_state
@@ -402,9 +391,9 @@ class WaypointNode(Node):
     def control_loop(self):
         self.pump_set_pose_transport()
 
-        # if self.odom_msg is None or self.odom_start is None or self.scan_msg is None:
-        #     self.stop_robot()
-        #     return
+        if self.odom_msg is None or self.odom_start is None or self.scan_msg is None:
+            self.stop_robot()
+            return
 
         if self.cube_attached:
             self.update_attached_cube_pose()
@@ -505,11 +494,25 @@ class WaypointNode(Node):
                 self.transition_to("DONE")
             
         if self.mission_state == "EXPLORE":
+            if self.mode in {"RECOVER_REVERSE", "RECOVER_TURN"}:
+                self.execute_explore_recovery()
+                return
+
             if self.explore_is_stuck():
                 reason = "escape stalled" if self.mode == "ESCAPE" else "explore stalled"
-                self.start_explore_escape(reason)
+                if self.mode == "ESCAPE":
+                    self.start_explore_recovery(reason, resume_escape=True)
+                else:
+                    self.start_explore_escape(reason)
+                return
 
             if self.mode == "ESCAPE":
+                if self.escape_goal_is_blocked():
+                    self.start_explore_recovery(
+                        "escape path blocked near waypoint",
+                        resume_escape=True,
+                    )
+                    return
                 if self.execute_explore_escape():
                     self.mode = "FORWARD"
                     self.escape_route_odom = []
@@ -518,63 +521,24 @@ class WaypointNode(Node):
                     self.get_logger().info("Explore escape complete; resuming free explore")
                 return
 
-            blocked_ahead = (
-            self.front_min < self.front_stop or
-            self.front_left_min < self.front_corner_stop or
-            self.front_right_min < self.front_corner_stop
-        )
+            self.control_free_explore()
+            return
 
-            too_close_on_side = (
-                self.left_side_min < self.side_drive_stop or
-                self.right_side_min < self.side_drive_stop
-            )
-            
-            if self.mode == "FORWARD":
-                if blocked_ahead or too_close_on_side:
-                    self.mode = "TURN"
-                    left_score = min(self.front_left_min, self.left_side_min)
-                    right_score = min(self.front_right_min, self.right_side_min)
-                    self.turn_dir = 1.0 if left_score > right_score else -1.0
-
-                elif self.front_left_min < self.front_corner_stop:
-                    self.publish_cmd(0.04, -0.6)   
-                elif self.front_right_min < self.front_corner_stop:
-                    self.publish_cmd(0.04, 0.6)    
-                elif self.front_left_min < self.corner_caution or self.front_right_min < self.corner_caution:
-                    if self.front_left_min < self.front_right_min:
-                        self.publish_cmd(0.08, -0.25)
-                    else:
-                        self.publish_cmd(0.08, 0.25)
-                else:
-                    ang = random.uniform(-0.12, 0.12)
-                    self.publish_cmd(1.0, ang)
-
-            elif self.mode == "TURN":
-                turn_side_min = self.left_side_min if self.turn_dir > 0 else self.right_side_min
-                if turn_side_min < self.side_turn_stop:
-                    if self.back_min > self.back_stop:
-                        self.mode = "BACK_UP"
-                        
-                    else:
-                        self.turn_dir *= -1.0
-                elif self.front_min > 0.9 and self.front_left_min > 0.7 and self.front_right_min > 0.7:
-                    self.mode = "FORWARD"
-                else:
-                    self.publish_cmd(0.0, 0.25 * self.turn_dir)
-            elif self.mode == "BACK_UP":
-                if self.back_min < self.back_stop:
-                    self.mode = "TURN"
-                    
-                else:
-                    self.publish_cmd(-0.15, 0.0)
         if self.mission_state == "DONE":
             self.stop_robot()
-            self.mode = "FORWARD"
-            self.turn_dir = 1.0
-            self.escape_route_odom = []
-            self.escape_route_index = 0
-            self.reset_explore_progress()
-            self.transition_to("EXPLORE")
+            if self.entered_state():
+                self.mode = "FORWARD"
+                self.turn_dir = 1.0
+                self.escape_route_odom = []
+                self.escape_route_index = 0
+                self.transition_to("EXPLORE")
+                if not self.start_explore_reposition(
+                    "clearing the drop zone before free explore"
+                ):
+                    self.get_logger().warn(
+                        "Explore reposition unavailable; starting free explore in place"
+                    )
+                    self.reset_explore_progress()
             return
 
     def follow_active_route(self):
@@ -661,6 +625,166 @@ class WaypointNode(Node):
         self.publish_cmd(-reverse_speed, angular)
         return False
 
+    def control_free_explore(self):
+        self.mode = "FORWARD"
+
+        hard_blocked = (
+            self.front_min < self.explore_hard_front_stop
+            or (
+                self.front_left_min < self.explore_corner_hard_stop
+                and self.front_right_min < self.explore_corner_hard_stop
+            )
+            or (
+                self.left_side_min < self.explore_side_hard_stop
+                and self.front_left_min < self.corner_caution
+            )
+            or (
+                self.right_side_min < self.explore_side_hard_stop
+                and self.front_right_min < self.corner_caution
+            )
+        )
+        if hard_blocked:
+            self.start_explore_recovery("free explore blocked", resume_escape=False)
+            return
+
+        front_balance = self.clamp(self.front_left_min, 0.0, 2.0) - self.clamp(
+            self.front_right_min, 0.0, 2.0
+        )
+        side_balance = self.clamp(self.left_side_min, 0.0, 1.5) - self.clamp(
+            self.right_side_min, 0.0, 1.5
+        )
+        avoid_bias = self.current_explore_avoid_bias()
+        front_component = self.explore_steer_gain * front_balance
+        if self.explore_avoid_dir > 0.0 and front_component < 0.0:
+            front_component *= 0.15
+        elif self.explore_avoid_dir < 0.0 and front_component > 0.0:
+            front_component *= 0.15
+
+        steer = (
+            front_component
+            + 0.12 * side_balance
+            + avoid_bias
+            + (0.35 if abs(avoid_bias) > 0.05 else 1.0) * self.current_explore_wander_bias()
+        )
+
+        if self.left_side_min < self.explore_side_caution:
+            steer -= self.explore_side_push_gain * (
+                self.explore_side_caution - self.left_side_min
+            )
+        if self.right_side_min < self.explore_side_caution:
+            steer += self.explore_side_push_gain * (
+                self.explore_side_caution - self.right_side_min
+            )
+
+        if self.explore_avoid_dir > 0.0:
+            steer = max(steer, self.explore_avoid_min_steer)
+        elif self.explore_avoid_dir < 0.0:
+            steer = min(steer, -self.explore_avoid_min_steer)
+
+        steer = self.clamp(steer, -self.explore_max_angular, self.explore_max_angular)
+
+        linear = 0.16 + 0.18 * min(self.front_min, 2.0)
+        if (
+            self.front_min < self.front_stop
+            or self.front_left_min < self.corner_caution
+            or self.front_right_min < self.corner_caution
+        ):
+            linear = min(linear, 0.20)
+
+        if self.explore_avoid_dir != 0.0:
+            linear = min(linear, self.explore_avoid_linear_cap)
+
+        linear *= max(0.45, 1.0 - 0.45 * abs(steer))
+        linear = self.clamp(linear, 0.12, self.explore_max_linear)
+        self.publish_cmd(linear, steer)
+
+    def start_explore_recovery(self, reason, resume_escape):
+        if self.odom_msg is None:
+            return False
+
+        now_ns = self.get_clock().now().nanoseconds
+        yaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
+        self.reset_explore_avoidance()
+        self.turn_dir = self.choose_explore_turn_dir()
+        self.explore_recovery_resume_escape = resume_escape
+        self.explore_recovery_started_ns = now_ns
+
+        turn_angle = self.explore_recovery_turn_angle
+        if self.front_min < self.nav_front_stop + 0.10:
+            turn_angle += 0.25
+        if (
+            (self.turn_dir > 0 and self.left_side_min < self.side_drive_stop)
+            or (self.turn_dir < 0 and self.right_side_min < self.side_drive_stop)
+        ):
+            turn_angle += 0.20
+        self.explore_recovery_target_yaw = self.wrap_angle(yaw + self.turn_dir * turn_angle)
+
+        if self.back_min > self.back_stop + 0.10:
+            self.mode = "RECOVER_REVERSE"
+        else:
+            self.mode = "RECOVER_TURN"
+
+        self.explore_progress_anchor = (
+            self.odom_msg.pose.pose.position.x,
+            self.odom_msg.pose.pose.position.y,
+        )
+        self.explore_progress_anchor_ns = now_ns
+
+        self.get_logger().warn(
+            f"Explore recovery started: {reason}; "
+            f"resume={'escape' if resume_escape else 'free'} "
+            f"turn_dir={'left' if self.turn_dir > 0 else 'right'}"
+        )
+        return True
+
+    def execute_explore_recovery(self):
+        if self.odom_msg is None:
+            self.stop_robot()
+            return False
+
+        now_ns = self.get_clock().now().nanoseconds
+        elapsed = (now_ns - self.explore_recovery_started_ns) / 1e9
+
+        if self.mode == "RECOVER_REVERSE":
+            if (
+                elapsed >= self.explore_recovery_reverse_seconds
+                or self.back_min <= self.back_stop + 0.05
+            ):
+                yaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
+                self.explore_recovery_target_yaw = self.wrap_angle(
+                    yaw + self.turn_dir * self.explore_recovery_turn_angle
+                )
+                self.explore_recovery_started_ns = now_ns
+                self.mode = "RECOVER_TURN"
+            else:
+                self.publish_cmd(-0.14, 0.25 * self.turn_dir)
+                return False
+
+        yaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
+        yaw_error = self.wrap_angle(self.explore_recovery_target_yaw - yaw)
+        clear_ahead = (
+            self.front_min > self.nav_front_stop + 0.20
+            and self.front_left_min > self.front_corner_stop
+            and self.front_right_min > self.front_corner_stop
+        )
+        turn_elapsed = (now_ns - self.explore_recovery_started_ns) / 1e9
+
+        if (abs(yaw_error) <= 0.12 and clear_ahead) or (
+            turn_elapsed >= self.explore_recovery_turn_seconds
+        ):
+            self.mode = "ESCAPE" if self.explore_recovery_resume_escape else "FORWARD"
+            self.reset_explore_progress()
+            self.get_logger().info(
+                "Explore recovery complete; resuming "
+                + ("escape route" if self.explore_recovery_resume_escape else "free explore")
+            )
+            return True
+
+        angular = self.clamp(1.8 * yaw_error, -0.9, 0.9)
+        linear = 0.05 if abs(yaw_error) < 0.35 and self.front_min > 0.90 else 0.0
+        self.publish_cmd(linear, angular)
+        return False
+
     def reset_explore_progress(self):
         if self.odom_msg is None:
             self.explore_progress_anchor = None
@@ -698,7 +822,11 @@ class WaypointNode(Node):
         stalled_for = (now_ns - self.explore_progress_anchor_ns) / 1e9
         return stalled_for >= self.explore_stuck_timeout
 
-    def start_explore_escape(self, reason):
+    def start_explore_route(self, reason, log_as_warning=True):
+        if self.odom_msg is None or self.odom_start is None:
+            return False
+
+        self.reset_explore_avoidance()
         ox = self.odom_msg.pose.pose.position.x
         oy = self.odom_msg.pose.pose.position.y
         oyaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
@@ -714,10 +842,22 @@ class WaypointNode(Node):
         self.reset_explore_progress()
 
         goal_x, goal_y, _ = route_world[-1]
-        self.get_logger().warn(
-            f"Explore escape triggered: {reason} at ({wx:.2f}, {wy:.2f}) "
+        message = (
+            f"{'Explore escape triggered' if log_as_warning else 'Explore reposition started'}: "
+            f"{reason} at ({wx:.2f}, {wy:.2f}) "
             f"toward ({goal_x:.2f}, {goal_y:.2f})"
         )
+        if log_as_warning:
+            self.get_logger().warn(message)
+        else:
+            self.get_logger().info(message)
+        return True
+
+    def start_explore_escape(self, reason):
+        return self.start_explore_route(reason, log_as_warning=True)
+
+    def start_explore_reposition(self, reason):
+        return self.start_explore_route(reason, log_as_warning=False)
 
     def build_explore_escape_route_world(self, wx, wy):
         if wx < -1.2 and wy < -0.8:
@@ -766,6 +906,44 @@ class WaypointNode(Node):
             self.reset_explore_progress()
 
         return self.escape_route_index >= len(self.escape_route_odom)
+
+    def escape_goal_is_blocked(self):
+        if self.odom_msg is None or self.escape_route_index >= len(self.escape_route_odom):
+            return False
+
+        gx, gy, _ = self.escape_route_odom[self.escape_route_index]
+        x = self.odom_msg.pose.pose.position.x
+        y = self.odom_msg.pose.pose.position.y
+        yaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
+
+        dx = gx - x
+        dy = gy - y
+        if math.hypot(dx, dy) <= self.position_tolerance:
+            return False
+
+        heading_error = self.wrap_angle(math.atan2(dy, dx) - yaw)
+        if abs(heading_error) > self.turn_only_threshold:
+            return False
+
+        if self.front_min < self.nav_front_stop + 0.08:
+            return True
+
+        if (
+            self.front_left_min < self.explore_corner_hard_stop
+            and self.front_right_min < self.explore_corner_hard_stop
+        ):
+            return True
+
+        if heading_error >= 0.0:
+            return (
+                self.left_side_min < self.explore_side_hard_stop
+                and self.front_left_min < self.corner_caution
+            )
+
+        return (
+            self.right_side_min < self.explore_side_hard_stop
+            and self.front_right_min < self.corner_caution
+        )
 
     def publish_right_arm_pose(self, positions, use_action=False):
         self.right_arm_target = list(positions)
@@ -932,6 +1110,11 @@ class WaypointNode(Node):
         return tuple(sum(matrix[i][k] * vector[k] for k in range(3)) for i in range(3))
 
     def status_loop(self):
+        avoid_dir = (
+            "left"
+            if self.explore_avoid_dir > 0.0
+            else "right" if self.explore_avoid_dir < 0.0 else "none"
+        )
         self.get_logger().info(
             f"state={self.mission_state} cube={self.target_cube} "
             f"mode={self.mode} room={self.current_room} rooms={sorted(self.rooms_visited)} "
@@ -940,7 +1123,9 @@ class WaypointNode(Node):
             f"cube_attached={self.cube_attached} dist={self.distance_traveled:.2f} "
             f"front={self.front_min:.2f} back={self.back_min:.2f} "
             f"left={self.left_side_min:.2f} right={self.right_side_min:.2f} "
-            f"turn_dir={'left' if self.turn_dir > 0 else 'right'}"
+            f"front_left={self.front_left_min:.2f} front_right={self.front_right_min:.2f} "
+            f"turn_dir={'left' if self.turn_dir > 0 else 'right'} "
+            f"avoid_dir={avoid_dir}"
         )
 
     def publish_cmd(self, linear_x, angular_z):
