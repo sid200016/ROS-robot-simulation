@@ -2,7 +2,8 @@ This is assuming ros2 jazzy and gazebo harmonic have been installed and setup pr
 
 Current package install files: \
 sudo apt install ros-jazzy-xacro \
-sudo apt install ros-jazzy-robot-state-publisher \ 
+sudo apt install ros-jazzy-robot-state-publisher 
+
 sudo apt install ros-jazzy-joint-state-publisher \
 sudo apt install ros-jazzy-ros2-control \
 sudo apt install  ros-jazzy-ros2-controllers \
