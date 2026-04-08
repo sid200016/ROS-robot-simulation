@@ -45,7 +45,7 @@ CUBE_MISSIONS = {
         "pick_route_world": [
             (0.0, 6.0, 0.0),
             (2.0, 6.0, 0.0),
-            (2.12, 6.2, math.pi / 2.0),
+            (2.0, 6.0, math.pi / 2.0),
         ],
         "drop_route_world": [
             (2.0, 5.55, math.pi),
@@ -67,28 +67,28 @@ WPs = [
     [0.0, 6.0, -math.pi / 4.0],
     [0.0, 6.0, -math.pi / 2.0],
     [0.0, 2.5, -math.pi / 2.0],
-    [3.0, 2.5, 0.0],
-    [3.0, 2.5, math.pi],
+    [2.25, 2.5, 0.0],
+    [2.25, 2.5, math.pi],
     [0.0, 2.5, math.pi],
     [0.0, 2.5, -math.pi/2.0], 
     [0.0, 1.5, -math.pi/2.0],
-    [-3.0, 1.5, math.pi],
-    [-3.0, 1.5, 0.0],
+    [-2.25, 1.5, math.pi],
+    [-2.25, 1.5, 0.0],
     [0.0, 1.5, 0.0],
     [0.0, 1.5, -math.pi/2.0],
     [0.0, -1.5, -math.pi/2.0],
-    [-3.0, -1.5, math.pi],
-    [-3.0, -1.5, 0.0],
+    [-2.25, -1.5, math.pi],
+    [-2.25, -1.5, 0.0],
     [0.0, -1.5, 0.0],
     [0.0, -1.5, -math.pi/2.0],
     [0.0, -2.5, -math.pi/2.0],
-    [3.0, -2.5, 0.0],
-    [3.0, -2.5, math.pi],
+    [2.25, -2.5, 0.0],
+    [2.25, -2.5, math.pi],
     [0.0, -2.5, math.pi], 
     [0.0, -2.5, -math.pi/2.0],
     [0.0, -6.0, -math.pi/2.0],
-    [3.0, -6.0, 0.0],
-    [3.0, -6.0, math.pi],
+    [2.25, -6.0, 0.0],
+    [2.25, -6.0, math.pi],
     [0.0, -6.0, math.pi],
     [-3.0, -6.0, math.pi],
     [-3.0, -6.0, 0.0],
@@ -132,8 +132,8 @@ class WaypointNode(Node):
         self.position_tolerance = 0.06
         self.yaw_tolerance = 0.05
         self.turn_only_threshold = 0.22
-        self.max_linear = 0.5
-        self.max_angular = 0.25
+        self.max_linear = 0.9
+        self.max_angular = 0.55
         self.nav_front_slow = 0.95
         self.nav_front_stop = 0.62
         self.nav_side_slow = 0.82
@@ -384,7 +384,7 @@ class WaypointNode(Node):
         ax.grid(True)
         ax.axis("equal")
         fig.tight_layout()
-        plt.legend()
+     
         fig.savefig(self.run_dir / "path_live.png", dpi=180)
         plt.close(fig)
 
@@ -398,7 +398,7 @@ class WaypointNode(Node):
         ax.grid(True)
         ax.axis("equal")
         fig.tight_layout()
-        plt.legend()
+      
         fig.savefig(self.run_dir / "path_live_world.png", dpi=180)
         plt.close(fig)
 

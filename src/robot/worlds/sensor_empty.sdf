@@ -39,7 +39,7 @@
    <include>
         <name>obs3</name>
         <uri>model://Woodcube10cm</uri>
-        <pose>3.0 -2.5 0.0 0 0 1.57</pose>  
+        <pose>3.5 -2.5 0.0 0 0 1.57</pose>  
     </include>
    
    <include>

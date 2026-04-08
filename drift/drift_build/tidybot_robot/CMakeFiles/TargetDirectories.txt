@@ -1,0 +1,10 @@
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/uninstall.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/tidybot_robot_uninstall.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/tidybot_robot_node.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/test.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/edit_cache.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/rebuild_cache.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/list_install_components.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/install.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/install/local.dir
+/home/cukku/Desktop/ROS-robot-simulation/drift/drift_build/tidybot_robot/CMakeFiles/install/strip.dir

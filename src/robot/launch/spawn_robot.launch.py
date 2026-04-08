@@ -174,6 +174,7 @@ def generate_launch_description():
     ],
     output="screen",)
 
+    
     waypoint_robot = Node(
         package="ros_sim_robot",
         executable="waypoint_node.py",

@@ -16,7 +16,7 @@ ekf_filter_node:
     odom0_config: [false, false, false,
                    false, false, false,
                    true,  false, false,
-                   false, false, false,
+                   false, false, true,
                    false, false, false]
 
     imu0: /imu/data_raw
@@ -28,3 +28,6 @@ ekf_filter_node:
     imu0_differential: false
     imu0_relative: false
     imu0_remove_gravitational_acceleration: false
+    pose_covariance_diagonal:  [0.10, 0.10, 1000000.0, 1000000.0, 1000000.0, 0.20]
+    twist_covariance_diagonal: [0.02, 1000000.0, 1000000.0, 1000000.0, 1000000.0, 0.03]
+
