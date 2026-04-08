@@ -154,8 +154,8 @@ class WaypointNode(Node):
         self.position_tolerance = 0.04
         self.yaw_tolerance = 0.05
         self.turn_only_threshold = 0.22
-        self.max_linear = 0.70
-        self.max_angular = 1.40
+        self.max_linear = 0.3
+        self.max_angular = 0.40
         self.nav_front_slow = 0.95
         self.nav_front_stop = 0.62
         self.nav_side_slow = 0.82
