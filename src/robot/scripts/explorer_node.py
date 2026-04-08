@@ -95,7 +95,7 @@ class ExplorerNode(Node):
         self.odom_writer = csv.writer(self.odom_file)
         self.odom_writer.writerow(["t", "x", "y", "yaw", "mode", "front", "front_left", "front_right"])
 
-        self.png_timer = self.create_timer(2.0, self.save_path_png)   # optional live snapshot every 2s
+        self.png_timer = self.create_timer(2.0, self.save_path_png) 
         self.odom_flush_counter = 0
 
 
@@ -191,9 +191,9 @@ class ExplorerNode(Node):
                 self.turn_dir = 1.0 if left_score > right_score else -1.0
 
             elif self.front_left_min < self.front_corner_stop:
-                self.publish_cmd(0.04, -0.6)   # obstacle on left front -> steer right
+                self.publish_cmd(0.04, -0.6)   
             elif self.front_right_min < self.front_corner_stop:
-                self.publish_cmd(0.04, 0.6)    # obstacle on right front -> steer left
+                self.publish_cmd(0.04, 0.6)  
 
             elif self.front_left_min < self.corner_caution or self.front_right_min < self.corner_caution:
                 if self.front_left_min < self.front_right_min:

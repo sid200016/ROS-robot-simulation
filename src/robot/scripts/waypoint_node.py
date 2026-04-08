@@ -573,7 +573,7 @@ class WaypointNode(Node):
 
             if self.entered_state():
                 self.get_logger().info("Final explore waypoint reached; shutting down")
-                self.shutdown_at_ns = now_ns + 200_000_000  # 0.2 s grace for final zero cmd
+                self.shutdown_at_ns = now_ns + 200_000_000  
             elif self.shutdown_at_ns is not None and now_ns >= self.shutdown_at_ns:
                 rclpy.try_shutdown()
             return
