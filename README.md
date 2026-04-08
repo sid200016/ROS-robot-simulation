@@ -12,7 +12,7 @@ sudo apt install  ros-jazzy-rviz2 \
 sudo apt install  ros-jazzy-robot-localization \
 sudo apt install  ros-jazzy-slam-toolbox \
 sudo apt install  ros-jazzy-joint-state-publisher-gui \
-sudo apt install  ros-jazzy-gz-ros2-control \
+sudo apt install  ros-jazzy-gz-ros2-control 
 
 
 sudo apt install ros-jazzy-ros-gz
@@ -21,12 +21,12 @@ sudo apt install ros-jazzy-ros-gz-sim ros-jazzy-ros-gz-bridge ros-jazzy-ros-gz-i
 Build and run instructions 
 
 source workspace first: source /opt/ros/jazzy/setup.bash 
-1. colcon build --packages-select ros_sim_robot \
-2. source install/setup.bash \
+1. colcon build --packages-select ros_sim_robot 
+2. source install/setup.bash 
 3. ros2 run xacro xacro src/robot/urdf/robot_model.xacro -o src/robot/urdf/robot_fin.urdf \
-Rebuild Again after urdf generation! \
-4. colcon build --packages-select ros_sim_robot \
-5. source install/setup.bash \
+Rebuild Again after urdf generation! 
+4. colcon build --packages-select ros_sim_robot 
+5. source install/setup.bash 
 6. ros2 launch ros_sim_robot spawn_robot.launch.py 
 
 To View Camera output 
