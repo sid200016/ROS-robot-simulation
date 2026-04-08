@@ -2,7 +2,7 @@ from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory # pyright: ignore[reportMissingImports]
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, RegisterEventHandler, TimerAction # pyright: ignore[reportMissingImports]
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, RegisterEventHandler, TimerAction, Shutdown  # pyright: ignore[reportMissingImports]
 from launch.event_handlers import OnProcessExit # pyright: ignore[reportMissingImports]
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration # pyright: ignore[reportMissingImports]
 from launch_ros.actions import Node # pyright: ignore[reportMissingImports]
@@ -23,34 +23,35 @@ def generate_launch_description():
     y = LaunchConfiguration("y")
     z = LaunchConfiguration("z")
 
-    gazebo = ExecuteProcess(
-        cmd=[
-            "ros2",
-            "launch",
-            "ros_gz_sim",
-            "gz_sim.launch.py",
-            f"gz_args:=-r {default_world}",
-        ],
-        output="screen",
+    gazebo = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            str(Path(get_package_share_directory("ros_gz_sim")) / "launch" / "gz_sim.launch.py")
+        ),
+        launch_arguments={
+            "gz_args": f"-r {default_world}",
+            "on_exit_shutdown": "true",
+        }.items(),
     )
 
     spawn = TimerAction(
         period=0.1,
         actions=[
-            ExecuteProcess(
-                cmd=[
-                    "ros2",
-                    "launch",
-                    "ros_gz_sim",
-                    "gz_spawn_model.launch.py",
-                    f"world:={world_name}",
-                    ["file:=", urdf_path],
-                    ["entity_name:=", entity_name],
-                    ["x:=", x],
-                    ["y:=", y],
-                    ["z:=", z],
-                ],
-                output="screen",
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    str(
+                        Path(get_package_share_directory("ros_gz_sim"))
+                        / "launch"
+                        / "gz_spawn_model.launch.py"
+                    )
+                ),
+                launch_arguments={
+                    "world": world_name,
+                    "file": urdf_path,
+                    "entity_name": entity_name,
+                    "x": x,
+                    "y": y,
+                    "z": z,
+                }.items(),
             )
         ],
     )
@@ -180,6 +181,7 @@ def generate_launch_description():
         executable="waypoint_node.py",
         parameters=[{"use_sim_time": True}],
         output="screen",
+        on_exit = Shutdown()
     )
 
     start_diff_drive_controller = RegisterEventHandler(

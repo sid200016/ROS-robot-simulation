@@ -96,7 +96,7 @@ WPs = [
     [0.0, -6.0, math.pi/2.0],  
     [0.0, 6.0, math.pi/2.0],
     [-3.0, 6.0, math.pi],
-    [3.0, 6.0, 0.0],
+    [-3.0, 6.0, 0.0],
 ]
  
  
@@ -373,11 +373,14 @@ class WaypointNode(Node):
         if not self.path_msg.poses:
             return
 
-        xs, ys, yaws = self.current_pose()
+        xs = [p.pose.position.x for p in self.path_msg.poses]
+        ys = [p.pose.position.y for p in self.path_msg.poses]
 
         fig, ax = plt.subplots(figsize=(6, 10))
         ax.plot(xs, ys, linewidth=2)
-
+        ax.scatter(xs[0], ys[0], c="green", s=40, label="Start")
+        ax.scatter(xs[-1], ys[-1], c="red", s=40, label="End")
+        ax.legend()
         ax.set_xlabel("x (m)")
         ax.set_ylabel("y (m)")
         ax.set_title("Robot Path in robot initial frame")
@@ -388,19 +391,6 @@ class WaypointNode(Node):
         fig.savefig(self.run_dir / "path_live.png", dpi=180)
         plt.close(fig)
 
-        fig, ax = plt.subplots(figsize=(6, 10))
-        wx, wy, wyaw = self.current_world_pose()
-        ax.plot(wx, wy, linewidth=2)
-        
-        ax.set_xlabel("x (m)")
-        ax.set_ylabel("y (m)")
-        ax.set_title("Robot Path in world frame")
-        ax.grid(True)
-        ax.axis("equal")
-        fig.tight_layout()
-      
-        fig.savefig(self.run_dir / "path_live_world.png", dpi=180)
-        plt.close(fig)
 
 
     def odom_cb(self, msg):
@@ -579,6 +569,13 @@ class WaypointNode(Node):
 
         if self.mission_state == "EXPLORE_DONE":
             self.stop_robot()
+            now_ns = self.get_clock().now().nanoseconds
+
+            if self.entered_state():
+                self.get_logger().info("Final explore waypoint reached; shutting down")
+                self.shutdown_at_ns = now_ns + 200_000_000  # 0.2 s grace for final zero cmd
+            elif self.shutdown_at_ns is not None and now_ns >= self.shutdown_at_ns:
+                rclpy.try_shutdown()
             return
 
         if self.mission_state == "DONE":
@@ -891,7 +888,9 @@ def main(args=None):
         rclpy.spin(node)
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        rclpy.try_shutdown()
+
+  
 
 
 if __name__ == "__main__":
