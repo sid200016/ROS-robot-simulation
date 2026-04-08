@@ -58,6 +58,33 @@
 			<child link="lidar_link"/>
 			<origin xyz="0 0 ${torso_height / 2.0 + 0.04}" rpy="0 0 0" />
 		</joint>
+		<link name="imu_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<sphere radius="0.03" />
+				</geometry>
+				<material name="imu_gray">
+					<color rgba="0.3 0.3 0.3 1.0"/>
+				</material>
+			</visual>
+			<collision>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<sphere radius="0.03" />
+				</geometry>
+			</collision>
+			<xacro:box_inertial_from_mass
+				l="0.06"
+				w="0.06"
+				h="0.06"
+				mass="0.1" />
+		</link>
+		<joint name="imu_joint" type="fixed">
+			<parent link="${parent}"/>
+			<child link="imu_link"/>
+			<origin xyz="0 0 ${chassis_height / 2.0 + 0.08}" rpy="0 0 0" />
+		</joint>
 	</xacro:macro>
 
 </robot>

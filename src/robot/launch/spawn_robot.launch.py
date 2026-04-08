@@ -8,7 +8,8 @@ from launch.substitutions import Command, FindExecutable, LaunchConfiguration # 
 from launch_ros.actions import Node # pyright: ignore[reportMissingImports]
 from launch_ros.parameter_descriptions import ParameterValue # pyright: ignore[reportMissingImports]
 from ros_gz_bridge.actions import RosGzBridge # pyright: ignore[reportMissingImports]
-
+from launch.actions import IncludeLaunchDescription # pyright: ignore[reportMissingImports]
+from launch.launch_description_sources import PythonLaunchDescriptionSource # pyright: ignore[reportMissingImports]
 
 def generate_launch_description():
     package_share = Path(get_package_share_directory("ros_sim_robot"))
@@ -34,7 +35,7 @@ def generate_launch_description():
     )
 
     spawn = TimerAction(
-        period=3.0,
+        period=0.1,
         actions=[
             ExecuteProcess(
                 cmd=[
@@ -60,7 +61,8 @@ def generate_launch_description():
         arguments=["/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
         "/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image",
         "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
-        "/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",],
+        "/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
+        "/imu/data_raw@sensor_msgs/msg/Imu[gz.msgs.IMU"],
         output="screen",
     )
 
@@ -99,6 +101,23 @@ def generate_launch_description():
                 "use_sim_time": True,
             }
         ],
+    )
+    ekf_filter = Node(
+        package="robot_localization",
+        executable="ekf_node",
+        name="ekf_filter_node",
+        output="screen",
+        parameters=[package_share / "config" / "ekf.yaml"],
+    )
+
+
+    slam_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            str(Path(get_package_share_directory("slam_toolbox")) / "launch" / "online_async_launch.py")
+        ),
+        launch_arguments={
+            "slam_params_file": str(package_share / "config" / "slam_toolbox.yaml"),
+        }.items(),
     )
 
     joint_state_broadcaster_spawner = Node(
@@ -174,6 +193,19 @@ def generate_launch_description():
             on_exit=[joint_trajectory_controller_spawner],
         )
     )
+    start_ekf = RegisterEventHandler(
+        OnProcessExit(
+            target_action=joint_trajectory_controller_spawner,
+            on_exit=[ekf_filter],
+        )
+    )
+
+    start_SLAM = RegisterEventHandler(
+        OnProcessExit(
+            target_action=joint_trajectory_controller_spawner,
+            on_exit=[slam_launch],
+        )
+    )
 
     move_to_init_pose = RegisterEventHandler(
         OnProcessExit(
@@ -213,6 +245,8 @@ def generate_launch_description():
             joint_state_broadcaster_spawner,
             start_diff_drive_controller,
             start_joint_trajectory_controller,
+            start_ekf, 
+            start_SLAM,
             move_to_init_pose,
             start_waypoint_robot
         ]

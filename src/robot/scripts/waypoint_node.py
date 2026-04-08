@@ -16,9 +16,11 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from nav_msgs.msg import Odometry, Path
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from rclpy.time import Time
 from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
 from sensor_msgs.msg import LaserScan
+from tf2_ros import Buffer, TransformException, TransformListener
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 WORLD_START = (-3.0, 6.0, 0.0)
@@ -43,7 +45,7 @@ CUBE_MISSIONS = {
         "pick_route_world": [
             (0.0, 6.0, 0.0),
             (2.0, 6.0, 0.0),
-            (2.336, 6.0, math.pi / 2.0),
+            (2.12, 6.2, math.pi / 2.0),
         ],
         "drop_route_world": [
             (2.0, 5.55, math.pi),
@@ -55,7 +57,7 @@ CUBE_MISSIONS = {
 }
 
 ARM_MOVE_TIME = 2.5
-CUBE_HALF_HEIGHT = 0.15
+CUBE_HALF_HEIGHT = 0.16
 POSE_REQUEST_TIMEOUT = 1.0
 
 RIGHT_ARM_MOUNT_Y = -(0.42 / 2.0 + 0.025)
@@ -63,68 +65,40 @@ RIGHT_ARM_MOUNT_Z = 0.10 + 0.10 + (0.10 / 2.0 - 0.025)
 
 WPs = [
     [0.0, 6.0, -math.pi / 4.0],
-    [0.0, 6.0, -3.0 * math.pi / 8.0],
     [0.0, 6.0, -math.pi / 2.0],
-    [0.0, 4.5, -math.pi / 2.0],
-    [0.0, 3.0, -math.pi / 2.0],
-    [0.0, 1.5, -math.pi / 2.0],
-    [0.0, 1.5, -3.0 * math.pi / 4.0],
-    [-1.0, 1.5, -math.pi],
-    [-2.0, 1.5, -math.pi],
-    [-2.0, 1.5, -math.pi / 2.0],
-    [-2.0, 1.5, 0.0],
-    [-1.0, 1.5, 0.0],
-    [0.0, 1.5, 0.0],
-    [1.0, 2.0, 0.0],
-    [2.0, 2.5, 0.0],
-    [2.0, 2.5, math.pi / 2.0],
-    [2.0, 2.5, math.pi],
-    [1.0, 2.5, math.pi],
-    [0.0, 2.5, math.pi],
-    [0.0, 2.5, -3.0 * math.pi / 4.0],
     [0.0, 2.5, -math.pi / 2.0],
-    [0.0, 0.5, -math.pi / 2.0],
-    [0.0, -1.5, -math.pi / 2.0],
-    [0.0, -1.5, -3.0 * math.pi / 4.0],
-    [-1.0, -1.5, math.pi],
-    [-2.0, -1.5, math.pi],
-    [-2.0, -1.5, math.pi / 2.0],
-    [-2.0, -1.5, 0.0],
-    [-1.0, -1.5, 0.0],
+    [3.0, 2.5, 0.0],
+    [3.0, 2.5, math.pi],
+    [0.0, 2.5, math.pi],
+    [0.0, 2.5, -math.pi/2.0], 
+    [0.0, 1.5, -math.pi/2.0],
+    [-3.0, 1.5, math.pi],
+    [-3.0, 1.5, 0.0],
+    [0.0, 1.5, 0.0],
+    [0.0, 1.5, -math.pi/2.0],
+    [0.0, -1.5, -math.pi/2.0],
+    [-3.0, -1.5, math.pi],
+    [-3.0, -1.5, 0.0],
     [0.0, -1.5, 0.0],
-    [1.0, -2.0, 0.0],
-    [2.0, -2.5, 0.0],
-    [1.0, -2.5, math.pi],
-    [0.0, -2.5, math.pi],
-    [0.0, -2.5, -3.0 * math.pi / 4.0],
-    [0.0, -2.5, -math.pi / 2.0],
-    [0.0, -4.0, -math.pi / 2.0],
-    [0.0, -5.0, -math.pi / 2.0],
-    [0.0, -6.0, -math.pi / 2.0],
-    [0.0, -6.0, -3.0 * math.pi / 4.0],
-    [-1.0, -6.0, math.pi],
-    [-2.0, -6.0, math.pi],
-    [-2.0, -6.0, math.pi / 2.0],
-    [-2.0, -6.0, 0.0],
-    [-1.0, -6.0, 0.0],
-    [0.0, -6.0, 0.0],
-    [1.0, -6.0, 0.0],
-    [2.0, -6.0, 0.0],
-    [2.0, -6.0, math.pi / 2.0],
-    [2.0, -6.0, math.pi],
-    [1.0, -6.0, math.pi],
+    [0.0, -1.5, -math.pi/2.0],
+    [0.0, -2.5, -math.pi/2.0],
+    [3.0, -2.5, 0.0],
+    [3.0, -2.5, math.pi],
+    [0.0, -2.5, math.pi], 
+    [0.0, -2.5, -math.pi/2.0],
+    [0.0, -6.0, -math.pi/2.0],
+    [3.0, -6.0, 0.0],
+    [3.0, -6.0, math.pi],
     [0.0, -6.0, math.pi],
-    [0.0, -6.0, 3.0 * math.pi / 4.0],
-    [0.0, -6.0, math.pi / 2.0],
-    [0.0, -3.0, math.pi / 2.0],
-    [0.0, 0.0, math.pi / 2.0],
-    [0.0, 3.0, math.pi / 2.0],
-    [0.0, 6.0, math.pi / 2.0],
-    [-1.5, 6.0, math.pi],
+    [-3.0, -6.0, math.pi],
+    [-3.0, -6.0, 0.0],
+    [0.0, -6.0, 0.0],
+    [0.0, -6.0, math.pi/2.0],  
+    [0.0, 6.0, math.pi/2.0],
     [-3.0, 6.0, math.pi],
-    [-3.0, 6.0, math.pi / 2.0],
-    [-3.0, 6.0, 0.0],
+    [3.0, 6.0, 0.0],
 ]
+ 
  
 class WaypointNode(Node):
     def __init__(self):
@@ -133,7 +107,8 @@ class WaypointNode(Node):
         self.WPs = []
         self.scan_msg = None
         self.odom_msg = None
-        self.odom_start = None
+        self.map_pose = None
+        self.map_start = None
         self.mode = "FORWARD"
         self.turn_dir = 1.0
         self.front_min = float("inf")
@@ -150,12 +125,15 @@ class WaypointNode(Node):
         self.prev_xy = None
         self.rooms_visited = set()
         self.current_room = "NORTH"
+        self.localization_frame = "map"
+        self.base_frame = "base_link"
+        self.last_tf_error_ns = 0
 
-        self.position_tolerance = 0.04
+        self.position_tolerance = 0.06
         self.yaw_tolerance = 0.05
         self.turn_only_threshold = 0.22
-        self.max_linear = 0.3
-        self.max_angular = 0.40
+        self.max_linear = 0.5
+        self.max_angular = 0.25
         self.nav_front_slow = 0.95
         self.nav_front_stop = 0.62
         self.nav_side_slow = 0.82
@@ -190,15 +168,17 @@ class WaypointNode(Node):
         self.backout_start_xy = None
         self.backout_hold_yaw = 0.0
 
-        self.pick_route_odom = []
-        self.box_route_odom = []
+        self.pick_route_map = []
+        self.box_route_map = []
         self.active_route = []
         self.active_route_name = "IDLE"
         self.route_index = 0
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.scan_sub = self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)
         self.odom_sub = self.create_subscription(
-            Odometry, "/diff_drive_controller/odom", self.odom_cb, 10
+            Odometry, "/odometry/filtered", self.odom_cb, 30
         )
 
         self.cmd_pub = self.create_publisher(
@@ -219,7 +199,7 @@ class WaypointNode(Node):
         )
 
         self.path_msg = Path()
-        self.path_msg.header.frame_id = "odom"
+        self.path_msg.header.frame_id = self.localization_frame
 
         self.control_timer = self.create_timer(0.02, self.control_loop)
         self.status_timer = self.create_timer(1.0, self.status_loop)
@@ -258,12 +238,35 @@ class WaypointNode(Node):
         return tuple(waypoint)
 
     def current_pose(self):
-        pose = self.odom_msg.pose.pose
-        return (
-            pose.position.x,
-            pose.position.y,
-            self.yaw_from_quat(pose.orientation),
+        return self.map_pose
+
+    def current_world_pose(self):
+        return self.map_pose_to_world(*self.current_pose())
+
+    def refresh_map_pose(self):
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                self.localization_frame,
+                self.base_frame,
+                Time(),
+            )
+        except TransformException as exc:
+            now_ns = self.get_clock().now().nanoseconds
+            if now_ns - self.last_tf_error_ns > 2_000_000_000:
+                self.get_logger().warn(
+                    f"Waiting for {self.localization_frame}->{self.base_frame} TF: {exc}"
+                )
+                self.last_tf_error_ns = now_ns
+            return False
+
+        translation = transform.transform.translation
+        rotation = transform.transform.rotation
+        self.map_pose = (
+            translation.x,
+            translation.y,
+            self.yaw_from_quat(rotation),
         )
+        return True
 
     def pose_errors(self, gx, gy, gyaw):
         x, y, yaw = self.current_pose()
@@ -281,7 +284,7 @@ class WaypointNode(Node):
 
         self.set_active_route(self.WPs, "EXPLORE_ROUTE")
         self.get_logger().info(
-            f"Starting explore route with {len(self.WPs)} odom-frame waypoints"
+            f"Starting explore route with {len(self.WPs)} map-frame waypoints"
         )
         return True
 
@@ -301,52 +304,52 @@ class WaypointNode(Node):
     def state_elapsed(self):
         return (self.get_clock().now().nanoseconds - self.state_started_ns) / 1e9
 
-    def world_to_odom(self, wx, wy):
+    def world_to_map(self, wx, wy):
         wsx, wsy, wsyaw = WORLD_START
-        osx, osy, osyaw = self.odom_start
+        msx, msy, msyaw = self.map_start
         dx_w = wx - wsx
         dy_w = wy - wsy
-        dtheta = osyaw - wsyaw
-        ox = osx + math.cos(dtheta) * dx_w - math.sin(dtheta) * dy_w
-        oy = osy + math.sin(dtheta) * dx_w + math.cos(dtheta) * dy_w
-        return ox, oy
+        dtheta = msyaw - wsyaw
+        mx = msx + math.cos(dtheta) * dx_w - math.sin(dtheta) * dy_w
+        my = msy + math.sin(dtheta) * dx_w + math.cos(dtheta) * dy_w
+        return mx, my
 
-    def odom_to_world(self, ox, oy):
+    def map_to_world(self, mx, my):
         wsx, wsy, wsyaw = WORLD_START
-        osx, osy, osyaw = self.odom_start
-        dtheta = osyaw - wsyaw
-        dx_o = ox - osx
-        dy_o = oy - osy
-        dx_w = math.cos(dtheta) * dx_o + math.sin(dtheta) * dy_o
-        dy_w = -math.sin(dtheta) * dx_o + math.cos(dtheta) * dy_o
+        msx, msy, msyaw = self.map_start
+        dtheta = msyaw - wsyaw
+        dx_m = mx - msx
+        dy_m = my - msy
+        dx_w = math.cos(dtheta) * dx_m + math.sin(dtheta) * dy_m
+        dy_w = -math.sin(dtheta) * dx_m + math.cos(dtheta) * dy_m
         return wsx + dx_w, wsy + dy_w
 
-    def world_pose_to_odom(self, wx, wy, wyaw):
-        ox, oy = self.world_to_odom(wx, wy)
-        dtheta = self.odom_start[2] - WORLD_START[2]
-        oyaw = self.wrap_angle(wyaw + dtheta)
-        return (ox, oy, oyaw)
+    def world_pose_to_map(self, wx, wy, wyaw):
+        mx, my = self.world_to_map(wx, wy)
+        dtheta = self.map_start[2] - WORLD_START[2]
+        myaw = self.wrap_angle(wyaw + dtheta)
+        return (mx, my, myaw)
 
-    def odom_pose_to_world(self, ox, oy, oyaw):
-        wx, wy = self.odom_to_world(ox, oy)
-        dtheta = self.odom_start[2] - WORLD_START[2]
-        wyaw = self.wrap_angle(oyaw - dtheta)
+    def map_pose_to_world(self, mx, my, myaw):
+        wx, wy = self.map_to_world(mx, my)
+        dtheta = self.map_start[2] - WORLD_START[2]
+        wyaw = self.wrap_angle(myaw - dtheta)
         return (wx, wy, wyaw)
 
-    def build_odom_routes(self):
-        self.pick_route_odom = [
-            self.world_pose_to_odom(wx, wy, wyaw)
+    def build_map_routes(self):
+        self.pick_route_map = [
+            self.world_pose_to_map(wx, wy, wyaw)
             for wx, wy, wyaw in self.mission["pick_route_world"]
         ]
-        self.box_route_odom = [
-            self.world_pose_to_odom(wx, wy, wyaw)
+        self.box_route_map = [
+            self.world_pose_to_map(wx, wy, wyaw)
             for wx, wy, wyaw in self.mission["drop_route_world"]
         ]
         self.WPs = [
-            self.world_pose_to_odom(*self.waypoint_triplet(waypoint, index + 1))
+            self.world_pose_to_map(*self.waypoint_triplet(waypoint, index + 1))
             for index, waypoint in enumerate(self.WPs_world)
         ]
-        self.set_active_route(self.pick_route_odom, "NAV_TO_CUBE_ROUTE")
+        self.set_active_route(self.pick_route_map, "NAV_TO_CUBE_ROUTE")
 
     def scan_cb(self, msg):
         self.scan_msg = msg
@@ -370,53 +373,76 @@ class WaypointNode(Node):
         if not self.path_msg.poses:
             return
 
-        xs = [p.pose.position.x for p in self.path_msg.poses]
-        ys = [p.pose.position.y for p in self.path_msg.poses]
+        xs, ys, yaws = self.current_pose()
 
         fig, ax = plt.subplots(figsize=(6, 10))
         ax.plot(xs, ys, linewidth=2)
-        ax.scatter(xs[0], ys[0], c="green", s=40)
-        ax.scatter(xs[-1], ys[-1], c="red", s=40)
+
         ax.set_xlabel("x (m)")
         ax.set_ylabel("y (m)")
-        ax.set_title("Robot Path")
+        ax.set_title("Robot Path in robot initial frame")
         ax.grid(True)
         ax.axis("equal")
         fig.tight_layout()
+        plt.legend()
         fig.savefig(self.run_dir / "path_live.png", dpi=180)
         plt.close(fig)
+
+        fig, ax = plt.subplots(figsize=(6, 10))
+        wx, wy, wyaw = self.current_world_pose()
+        ax.plot(wx, wy, linewidth=2)
+        
+        ax.set_xlabel("x (m)")
+        ax.set_ylabel("y (m)")
+        ax.set_title("Robot Path in world frame")
+        ax.grid(True)
+        ax.axis("equal")
+        fig.tight_layout()
+        plt.legend()
+        fig.savefig(self.run_dir / "path_live_world.png", dpi=180)
+        plt.close(fig)
+
 
     def odom_cb(self, msg):
         self.odom_msg = msg
 
-        x = msg.pose.pose.position.x
-        y = msg.pose.pose.position.y
+        if not self.refresh_map_pose():
+            return
 
-        if self.odom_start is None:
-            yaw = self.yaw_from_quat(msg.pose.pose.orientation)
-            self.odom_start = (x, y, yaw)
-            self.build_odom_routes()
+        x, y, yaw = self.current_pose()
+
+        if self.map_start is None:
+            self.map_start = self.current_pose()
+            self.build_map_routes()
             self.transition_to("NAV_TO_CUBE")
-            self.get_logger().info(f"odom_start set to {self.odom_start}")
+            self.get_logger().info(f"map_start set to {self.map_start}")
+
+        _, world_y, _ = self.current_world_pose()
 
         if self.prev_xy is not None:
             self.distance_traveled += math.hypot(x - self.prev_xy[0], y - self.prev_xy[1])
         self.prev_xy = (x, y)
 
-        self.current_room = self.classify_room(y)
+        self.current_room = self.classify_room(world_y)
         if self.current_room == "north":
             self.rooms_visited.add("north")
         elif self.current_room == "south":
             self.rooms_visited.add("south")
 
         pose = PoseStamped()
-        pose.header = msg.header
-        pose.pose = msg.pose.pose
+        pose.header.stamp = msg.header.stamp
+        pose.header.frame_id = self.localization_frame
+        pose.pose.position.x = x
+        pose.pose.position.y = y
+        qx, qy, qz, qw = self.quaternion_from_yaw(yaw)
+        pose.pose.orientation.x = qx
+        pose.pose.orientation.y = qy
+        pose.pose.orientation.z = qz
+        pose.pose.orientation.w = qw
         self.path_msg.header.stamp = msg.header.stamp
         self.path_msg.poses.append(pose)
         self.path_pub.publish(self.path_msg)
 
-        yaw = self.yaw_from_quat(msg.pose.pose.orientation)
         stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
 
         self.odom_writer.writerow(
@@ -441,7 +467,11 @@ class WaypointNode(Node):
     def control_loop(self):
         self.pump_set_pose_transport()
 
-        if self.odom_msg is None or self.odom_start is None or self.scan_msg is None:
+        if self.odom_msg is None or self.scan_msg is None:
+            self.stop_robot()
+            return
+
+        if not self.refresh_map_pose() or self.map_start is None:
             self.stop_robot()
             return
 
@@ -498,7 +528,7 @@ class WaypointNode(Node):
 
         if self.mission_state == "BACK_OUT":
             if self.execute_backout():
-                self.set_active_route(self.box_route_odom, "NAV_TO_BOX_ROUTE")
+                self.set_active_route(self.box_route_map, "NAV_TO_BOX_ROUTE")
                 self.transition_to("NAV_TO_BOX")
             return
 
@@ -604,9 +634,7 @@ class WaypointNode(Node):
         return False
 
     def execute_backout(self):
-        x = self.odom_msg.pose.pose.position.x
-        y = self.odom_msg.pose.pose.position.y
-        yaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
+        x, y, yaw = self.current_pose()
 
         if self.entered_state():
             self.backout_start_xy = (x, y)
@@ -733,17 +761,14 @@ class WaypointNode(Node):
             return
 
         magnet_x, magnet_y, magnet_z = self.right_magnet_world_position()
-        robot_yaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
+        _, _, robot_yaw = self.current_world_pose()
         cube_z = max(CUBE_HALF_HEIGHT, magnet_z - CUBE_HALF_HEIGHT)
 
         if self.request_cube_pose(magnet_x, magnet_y, cube_z, robot_yaw):
             self.last_cube_update_ns = now_ns
 
     def right_magnet_world_position(self):
-        ox = self.odom_msg.pose.pose.position.x
-        oy = self.odom_msg.pose.pose.position.y
-        oyaw = self.yaw_from_quat(self.odom_msg.pose.pose.orientation)
-        wx, wy, wyaw = self.odom_pose_to_world(ox, oy, oyaw)
+        wx, wy, wyaw = self.current_world_pose()
 
         rx, ry, rz = self.right_magnet_base_position(self.right_arm_target)
         mx = wx + math.cos(wyaw) * rx - math.sin(wyaw) * ry

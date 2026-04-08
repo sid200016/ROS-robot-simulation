@@ -73,7 +73,7 @@ class ExplorerNode(Node):
 
         self.scan_sub = self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)
         self.odom_sub = self.create_subscription(
-            Odometry, "/diff_drive_controller/odom", self.odom_cb, 10
+            Odometry, "/odometry/filtered", self.odom_cb, 10
         )
 
         self.cmd_pub = self.create_publisher(
