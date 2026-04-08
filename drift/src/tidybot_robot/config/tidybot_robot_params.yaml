@@ -1,5 +1,0 @@
-# Configuration parameters for tidybot_robot
-tidybot_robot:
-  ros__parameters:
-    # Add your parameters here
-    example_param: "default_value"
